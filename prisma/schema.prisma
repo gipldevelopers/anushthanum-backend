@@ -1,0 +1,415 @@
+// Anushthanum - Full Prisma Schema
+// id = internal (autoincrement), uuid = public API, slug = URL-friendly (where used)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // URL is set in prisma.config.ts (Prisma 7)
+}
+
+// ============== Admin & Auth ==============
+
+model AdminUser {
+  id        Int      @id @default(autoincrement()) // Internal use only
+  uuid      String   @unique @default(uuid())      // Public API identifier
+  slug      String   @unique                        // URL-friendly identifier (e.g. admin profile)
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+// ============== Customer (Front-end User) ==============
+
+model User {
+  id             Int       @id @default(autoincrement())
+  uuid           String    @unique @default(uuid())
+  slug           String    @unique
+  email          String    @unique
+  password       String?
+  name           String?
+  phone          String?
+  avatar         String?
+  googleId       String?   @unique // Google OAuth sub
+  dateOfBirth    DateTime? @db.Date
+  spiritualLevel String?
+  rewardPoints   Int       @default(0)
+  emailVerified  Boolean   @default(false)
+  emailOtp       String?   // 6-digit OTP for verification
+  emailOtpExpires DateTime?
+  otpLastSentAt  DateTime?
+  otpAttempts    Int       @default(0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  addresses       Address[]
+  wishlistItems   WishlistItem[]
+  cartItems       CartItem[]
+  orders          Order[]
+  productReviews  ProductReview[]
+  preferences     UserPreference?
+  savedPayments   SavedPaymentMethod[]
+
+  @@map("users")
+}
+
+model UserPreference {
+  id                Int      @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  slug              String   @unique
+  userId            Int      @unique
+  orderUpdates      Boolean  @default(true)
+  promotionsOffers  Boolean  @default(true)
+  newArrivals       Boolean  @default(false)
+  spiritualInsights  Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  userId    Int
+  type      String   // Home | Office | Other
+  name      String
+  street    String
+  city      String
+  state     String
+  pincode   String
+  phone     String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model SavedPaymentMethod {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  slug        String   @unique
+  userId      Int
+  last4       String
+  brand       String?
+  expiryMonth Int?
+  expiryYear  Int?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_payment_methods")
+}
+
+// ============== Catalog ==============
+
+model Category {
+  id             Int      @id @default(autoincrement())
+  uuid           String   @unique @default(uuid())
+  slug           String   @unique
+  name           String
+  description    String?  @db.Text
+  image          String?
+  status         String   @default("active")
+  seoTitle       String?
+  seoDescription String?  @db.VarChar(500)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  subCategories SubCategory[]
+  products      Product[]
+
+  @@map("categories")
+}
+
+model SubCategory {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  slug        String
+  parentId    Int
+  name        String
+  description String?  @db.Text
+  image       String?
+  status      String   @default("active")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([parentId, slug])
+  @@map("sub_categories")
+}
+
+model Product {
+  id               Int      @id @default(autoincrement())
+  uuid             String   @unique @default(uuid())
+  slug             String   @unique
+  name             String
+  categoryId       Int
+  subCategoryId    Int?
+  price            Decimal  @db.Decimal(12, 2)
+  discountPrice    Decimal? @db.Decimal(12, 2)
+  stock            Int      @default(0)
+  sku              String?  @unique
+  shortDescription String?  @db.Text
+  fullDescription  String?  @db.Text
+  thumbnail        String?
+  images           Json?
+  tags             Json?
+  isFeatured       Boolean  @default(false)
+  isVisible        Boolean  @default(true)
+  isBestseller     Boolean  @default(false)
+  status           String   @default("active")
+  seoTitle         String?
+  seoDescription   String?  @db.VarChar(500)
+  sortOrder        Int      @default(0)
+  rating           Decimal? @db.Decimal(2, 1)
+  reviewCount      Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subCategory    SubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  orderItems     OrderItem[]
+  wishlistItems  WishlistItem[]
+  cartItems      CartItem[]
+  productReviews ProductReview[]
+
+  @@map("products")
+}
+
+// ============== Wishlist ==============
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  userId    Int
+  productId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+// ============== Cart ==============
+
+model CartItem {
+  id               Int      @id @default(autoincrement())
+  uuid             String   @unique @default(uuid())
+  slug             String   @unique
+  userId           Int
+  productId        Int
+  quantity         Int      @default(1)
+  selectedVariants Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+// ============== Orders ==============
+
+model Order {
+  id                  Int       @id @default(autoincrement())
+  uuid                String    @unique @default(uuid())
+  slug                String    @unique
+  orderNumber         String    @unique
+  customerId          Int?
+  customerName        String
+  customerEmail       String
+  customerPhone       String?
+  shippingAddress     Json
+  subtotal            Decimal   @db.Decimal(12, 2)
+  shippingCost        Decimal   @db.Decimal(12, 2) @default(0)
+  tax                 Decimal   @db.Decimal(12, 2) @default(0)
+  discount            Decimal   @db.Decimal(12, 2) @default(0)
+  total               Decimal   @db.Decimal(12, 2)
+  status              String    @default("pending")
+  paymentMethod       String?
+  paymentStatus       String    @default("pending")
+  trackingNumber      String?
+  estimatedDeliveryAt DateTime?
+  couponCode          String?
+  isGift              Boolean   @default(false)
+  giftMessage        String?   @db.Text
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  customer User?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  uuid         String   @unique @default(uuid())
+  slug         String   @unique
+  orderId      Int
+  productId    Int?
+  productName  String
+  productImage String?
+  quantity     Int
+  price        Decimal  @db.Decimal(12, 2)
+  total        Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("order_items")
+}
+
+// ============== Coupons ==============
+
+model Coupon {
+  id             Int       @id @default(autoincrement())
+  uuid           String    @unique @default(uuid())
+  slug           String    @unique
+  code           String    @unique
+  type           String
+  value          Decimal   @db.Decimal(12, 2)
+  minOrderAmount Decimal?   @db.Decimal(12, 2)
+  maxDiscount    Decimal?   @db.Decimal(12, 2)
+  usageLimit     Int?
+  usedCount      Int       @default(0)
+  validFrom       DateTime?
+  validTo        DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("coupons")
+}
+
+// ============== Product Reviews ==============
+
+model ProductReview {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  userId    Int
+  productId Int
+  rating    Int
+  comment   String?  @db.Text
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("product_reviews")
+}
+
+// ============== Media ==============
+
+model MediaFile {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  name      String
+  path      String
+  mimeType  String?
+  size      Int?
+  alt       String?
+  createdAt DateTime @default(now())
+
+  @@map("media_files")
+}
+
+// ============== Content CMS ==============
+
+model Page {
+  id             Int      @id @default(autoincrement())
+  uuid           String   @unique @default(uuid())
+  slug           String   @unique
+  key            String   @unique
+  title          String?
+  content        Json?
+  seoTitle       String?
+  seoDescription String?  @db.VarChar(500)
+  status         String   @default("draft")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model Article {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?   @db.Text
+  content     String    @db.Text
+  image       String?
+  author      String?
+  status      String    @default("draft")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("articles")
+}
+
+// ============== Settings ==============
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ============== Enquiries ==============
+
+model Enquiry {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  slug      String   @unique
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+
+  @@map("enquiries")
+}
