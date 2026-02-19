@@ -14,4 +14,12 @@ async function uploadBlogImage(req, res) {
   res.json({ success: true, url });
 }
 
-module.exports = { uploadImage, uploadBlogImage };
+async function uploadSubcategoryImage(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded. Use field name "image".' });
+  }
+  const url = '/uploads/subcategories/' + req.file.filename;
+  res.json({ success: true, url });
+}
+
+module.exports = { uploadImage, uploadBlogImage, uploadSubcategoryImage };

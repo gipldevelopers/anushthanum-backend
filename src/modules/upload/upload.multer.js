@@ -42,4 +42,10 @@ const uploadBlog = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-module.exports = { upload, uploadBlog };
+const uploadSubcategory = multer({
+  storage: createStorage('subcategories'),
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+module.exports = { upload, uploadBlog, uploadSubcategory };

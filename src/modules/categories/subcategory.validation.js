@@ -12,6 +12,7 @@ const createSchema = Joi.object({
 });
 
 const updateSchema = Joi.object({
+  parentId: Joi.number().integer().positive(),
   name: Joi.string().trim().min(1).max(120),
   slug: Joi.string().trim().max(120),
   description: Joi.string().trim().max(5000).allow('', null),

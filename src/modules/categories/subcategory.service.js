@@ -53,7 +53,9 @@ async function create(body) {
     throw err;
   }
   const slug = body.slug?.trim() || slugify(name);
-  const existing = await prisma.subCategory.findUnique({ where: { parentId: pid, slug } });
+  const existing = await prisma.subCategory.findUnique({
+    where: { parentId_slug: { parentId: pid, slug } },
+  });
   if (existing) {
     const err = new Error('A subcategory with this slug already exists in this category.');
     err.statusCode = 409;
@@ -80,11 +82,28 @@ async function update(id, body) {
     err.statusCode = 404;
     throw err;
   }
-  const { name, description, image, status, sortOrder } = body;
+  const { parentId, name, description, image, status, sortOrder } = body;
   const slug = body.slug?.trim();
-  if (slug && slug !== sub.slug) {
+  const newParentId = parentId !== undefined ? Number(parentId) : sub.parentId;
+
+  if (newParentId !== sub.parentId) {
+    const parent = await prisma.category.findUnique({ where: { id: newParentId } });
+    if (!parent) {
+      const err = new Error('Parent category not found.');
+      err.statusCode = 404;
+      throw err;
+    }
+  }
+
+  if (slug !== undefined) {
+    const checkParentId = newParentId;
+    const checkSlug = slug || sub.slug;
     const existing = await prisma.subCategory.findFirst({
-      where: { parentId: sub.parentId, slug },
+      where: {
+        parentId: checkParentId,
+        slug: checkSlug,
+        id: { not: Number(id) },
+      },
     });
     if (existing) {
       const err = new Error('A subcategory with this slug already exists in this category.');
@@ -92,9 +111,11 @@ async function update(id, body) {
       throw err;
     }
   }
+
   const updated = await prisma.subCategory.update({
     where: { id: Number(id) },
     data: {
+      ...(parentId !== undefined && { parentId: Number(parentId) }),
       ...(slug && { slug }),
       ...(name !== undefined && { name: name.trim() }),
       ...(description !== undefined && { description: description?.trim() || null }),
