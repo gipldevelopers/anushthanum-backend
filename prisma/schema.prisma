@@ -175,11 +175,18 @@ model Product {
   shortDescription String?  @db.Text
   fullDescription  String?  @db.Text
   thumbnail        String?
-  images           Json?
-  tags             Json?
+  images           Json?    // string[]
+  tags             Json?    // string[]
+  benefits         Json?    // string[]
+  whoShouldWear    Json?    // string[]
+  wearingRules     Json?    // string[]
+  authenticity     Json?    // { certified, origin, certificate }
+  filterAttributes Json?    // { purposes: string[], beads: string[], mukhis: string[], platings: string[] }
+  variants         Json?    // [{ name, options: string[] }]
   isFeatured       Boolean  @default(false)
   isVisible        Boolean  @default(true)
   isBestseller     Boolean  @default(false)
+  isNew            Boolean  @default(false)
   status           String   @default("active")
   seoTitle         String?
   seoDescription   String?  @db.VarChar(500)

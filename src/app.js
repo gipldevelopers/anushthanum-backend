@@ -10,11 +10,14 @@ const config = require('./config');
 const authRoutes = require('./modules/auth/auth.routes');
 const { publicRouter: categoriesPublicRouter, adminRouter: categoriesAdminRouter } = require('./modules/categories/category.routes');
 const { publicRouter: blogsPublicRouter, adminRouter: blogsAdminRouter } = require('./modules/blogs/blog.routes');
+const { publicRouter: productsPublicRouter, adminRouter: productsAdminRouter } = require('./modules/products/product.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 if (config.NODE_ENV === 'production') {
   const limiter = rateLimit({
@@ -62,8 +65,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesPublicRouter);
 app.use('/api/blogs', blogsPublicRouter);
+app.use('/api/products', productsPublicRouter);
 app.use('/api/admin', categoriesAdminRouter);
 app.use('/api/admin/blogs', blogsAdminRouter);
+app.use('/api/admin/products', productsAdminRouter);
 app.use('/api/admin/upload', uploadRoutes);
 
 app.use((req, res) => {
