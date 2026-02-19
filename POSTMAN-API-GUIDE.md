@@ -142,6 +142,133 @@
 
 ---
 
+## 4. Categories (Public & Admin)
+
+**Category types:** `main` = navbar categories (can have subcategories). `material` = material-wise categories (below hero, with image).
+
+### 4.1 Public – List categories (no auth)
+
+| Method | Endpoint | Auth | Query |
+|--------|----------|------|-------|
+| GET | `/api/categories` | No | optional `type=main` or `type=material` |
+
+**Examples:**  
+- GET `http://localhost:5000/api/categories` → all active categories (main include subCategories).  
+- GET `http://localhost:5000/api/categories?type=main` → navbar categories with subCategories.  
+- GET `http://localhost:5000/api/categories?type=material` → material-wise categories (for below-hero tiles).
+
+**Success (200):** `{ "success": true, "categories": [ { "id", "uuid", "slug", "name", "description", "image", "type", "sortOrder", "subCategories"? } ] }`
+
+---
+
+### 4.2 Admin – List categories (protected)
+
+| Method | Endpoint | Auth | Query |
+|--------|----------|------|-------|
+| GET | `/api/admin/categories` | **Admin token** | optional `type=main` or `type=material` |
+
+**Header:** `Authorization: Bearer <adminAccessToken>`
+
+**Success (200):** `{ "success": true, "categories": [ ... ] }`
+
+---
+
+### 4.3 Admin – Get category by ID
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/admin/categories/:id` | **Admin token** |
+
+**Success (200):** `{ "success": true, "category": { ... } }`
+
+---
+
+### 4.4 Admin – Create category
+
+| Method | Endpoint | Auth | Body |
+|--------|----------|------|------|
+| POST | `/api/admin/categories` | **Admin token** | JSON below |
+
+**Body (raw JSON):**
+```json
+{
+  "name": "Rudraksha",
+  "slug": "rudraksha",
+  "description": "Sacred beads",
+  "image": "https://example.com/rudraksha.jpg",
+  "type": "main",
+  "status": "active",
+  "sortOrder": 0
+}
+```
+- `type`: `"main"` (navbar) or `"material"` (material-wise). Default `main`.  
+- `slug`: optional; auto-generated from name if omitted.  
+- `status`: `"active"` or `"inactive"`. Default `active`.
+
+**Success (201):** `{ "success": true, "category": { ... } }`
+
+---
+
+### 4.5 Admin – Update category
+
+| Method | Endpoint | Auth | Body |
+|--------|----------|------|------|
+| PUT | `/api/admin/categories/:id` | **Admin token** | JSON (any subset of fields) |
+
+**Body example:** `{ "name": "Rudraksha Beads", "sortOrder": 1 }`
+
+**Success (200):** `{ "success": true, "category": { ... } }`
+
+---
+
+### 4.6 Admin – Delete category
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| DELETE | `/api/admin/categories/:id` | **Admin token** |
+
+**Success (200):** `{ "success": true, "message": "Category deleted" }`
+
+---
+
+### 4.7 Admin – List subcategories of a category
+
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/admin/categories/:id/subcategories` | **Admin token** |
+
+**Success (200):** `{ "success": true, "subCategories": [ ... ] }`
+
+---
+
+### 4.8 Admin – Subcategories CRUD
+
+| Method | Endpoint | Auth | Body |
+|--------|----------|------|------|
+| GET | `/api/admin/subcategories` | **Admin token** | optional query `parentId` or `categoryId` |
+| GET | `/api/admin/subcategories/:id` | **Admin token** | — |
+| POST | `/api/admin/subcategories` | **Admin token** | JSON below |
+| PUT | `/api/admin/subcategories/:id` | **Admin token** | JSON (partial) |
+| DELETE | `/api/admin/subcategories/:id` | **Admin token** | — |
+
+**Create subcategory body:**
+```json
+{
+  "parentId": 1,
+  "name": "Rudraksha Beads",
+  "slug": "beads",
+  "description": "Optional",
+  "image": "",
+  "status": "active",
+  "sortOrder": 0
+}
+```
+Use `parentId` or `categoryId` (same thing).
+
+**Success (201):** `{ "success": true, "subCategory": { ... } }`
+
+---
+
 ## Quick checklist for Postman
 
 1. **Health:** GET `http://localhost:5000/api/health`
@@ -152,6 +279,9 @@
 6. **User me:** GET `/api/auth/me` with header `Authorization: Bearer <user accessToken>`.
 7. **Admin login:** POST `/api/auth/admin/login` with admin email/password → save `accessToken`.
 8. **Admin me:** GET `/api/auth/admin/me` with header `Authorization: Bearer <admin accessToken>`.
+9. **Public categories:** GET `/api/categories` or `/api/categories?type=main` or `?type=material`.
+10. **Admin categories:** GET/POST `/api/admin/categories`, GET/PUT/DELETE `/api/admin/categories/:id` (with admin token).
+11. **Admin subcategories:** GET/POST `/api/admin/subcategories`, GET/PUT/DELETE `/api/admin/subcategories/:id`, GET `/api/admin/categories/:id/subcategories`.
 
 ---
 

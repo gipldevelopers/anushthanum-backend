@@ -127,6 +127,7 @@ model Category {
   name           String
   description    String?  @db.Text
   image          String?
+  type           String   @default("main")  // "main" = navbar, "material" = material-wise (below hero)
   status         String   @default("active")
   seoTitle       String?
   seoDescription String?  @db.VarChar(500)
@@ -381,6 +382,34 @@ model Article {
   updatedAt   DateTime  @updatedAt
 
   @@map("articles")
+}
+
+// Blog posts (anushthanum-main style)
+model BlogPost {
+  id            Int       @id @default(autoincrement())
+  uuid          String    @unique @default(uuid())
+  slug          String    @unique
+  title         String
+  excerpt       String?   @db.Text
+  content       String    @db.Text
+  image         String?
+  authorName    String?
+  authorAvatar  String?
+  authorRole    String?
+  category      String?   // rudraksha, yantra, crystals, meditation, astrology, rituals, wellness
+  tags          Json?     // ["tag1","tag2"]
+  readTime      String?   // e.g. "8 min read"
+  views         Int       @default(0)
+  isMustRead    Boolean   @default(false)
+  isPopular     Boolean   @default(false)
+  isFeatured    Boolean   @default(false)
+  status        String    @default("draft")  // draft | published
+  publishedAt   DateTime?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("blog_posts")
 }
 
 // ============== Settings ==============

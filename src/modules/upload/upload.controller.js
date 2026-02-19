@@ -1,0 +1,17 @@
+async function uploadImage(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded. Use field name "image".' });
+  }
+  const url = '/uploads/categories/' + req.file.filename;
+  res.json({ success: true, url });
+}
+
+async function uploadBlogImage(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded. Use field name "image".' });
+  }
+  const url = '/uploads/blogs/' + req.file.filename;
+  res.json({ success: true, url });
+}
+
+module.exports = { uploadImage, uploadBlogImage };
