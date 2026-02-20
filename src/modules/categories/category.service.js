@@ -24,7 +24,7 @@ function toCategoryResponse(c) {
   };
 }
 
-function toSubCategoryResponse(s) {
+function toSubSubCategoryResponse(s) {
   if (!s) return null;
   return {
     id: s.id,
@@ -39,6 +39,25 @@ function toSubCategoryResponse(s) {
   };
 }
 
+function toSubCategoryResponse(s, includeSubSub = false) {
+  if (!s) return null;
+  const base = {
+    id: s.id,
+    uuid: s.uuid,
+    slug: s.slug,
+    name: s.name,
+    description: s.description,
+    image: s.image,
+    status: s.status,
+    sortOrder: s.sortOrder,
+    parentId: s.parentId,
+  };
+  if (includeSubSub && s.subSubCategories) {
+    base.subSubCategories = s.subSubCategories.map(toSubSubCategoryResponse);
+  }
+  return base;
+}
+
 // ---------- Public (no auth) ----------
 
 async function listPublic(query) {
@@ -49,7 +68,13 @@ async function listPublic(query) {
   const list = await prisma.category.findMany({
     where,
     orderBy: { sortOrder: 'asc' },
-    include: type === 'material' ? false : { subCategories: { where: { status: 'active' }, orderBy: { sortOrder: 'asc' } } },
+    include: type === 'material' ? false : {
+      subCategories: {
+        where: { status: 'active' },
+        orderBy: { sortOrder: 'asc' },
+        include: { subSubCategories: { where: { status: 'active' }, orderBy: { sortOrder: 'asc' } } },
+      },
+    },
   });
   return list.map((c) => ({
     id: c.id,
@@ -60,7 +85,7 @@ async function listPublic(query) {
     image: c.image,
     type: c.type,
     sortOrder: c.sortOrder,
-    ...(c.subCategories && { subCategories: c.subCategories.map(toSubCategoryResponse) }),
+    ...(c.subCategories && { subCategories: c.subCategories.map((s) => toSubCategoryResponse(s, true)) }),
   }));
 }
 
@@ -74,17 +99,34 @@ async function listAdmin(query) {
   const list = await prisma.category.findMany({
     where,
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
-    include: { subCategories: { orderBy: { sortOrder: 'asc' } } },
+    include: {
+      subCategories: {
+        orderBy: { sortOrder: 'asc' },
+        include: { subSubCategories: { orderBy: { sortOrder: 'asc' } } },
+      },
+    },
   });
-  return list.map(toCategoryResponse);
+  return list.map((c) => ({
+    ...toCategoryResponse(c),
+    subCategories: c.subCategories?.map((s) => ({ ...toSubCategoryResponse(s, false), subSubCategories: s.subSubCategories?.map(toSubSubCategoryResponse) })) ?? [],
+  }));
 }
 
 async function getById(id) {
   const category = await prisma.category.findUnique({
     where: { id: Number(id) },
-    include: { subCategories: { orderBy: { sortOrder: 'asc' } } },
+    include: {
+      subCategories: {
+        orderBy: { sortOrder: 'asc' },
+        include: { subSubCategories: { orderBy: { sortOrder: 'asc' } } },
+      },
+    },
   });
-  return category ? toCategoryResponse(category) : null;
+  if (!category) return null;
+  return {
+    ...toCategoryResponse(category),
+    subCategories: category.subCategories?.map((s) => ({ ...toSubCategoryResponse(s, false), subSubCategories: s.subSubCategories?.map(toSubSubCategoryResponse) })) ?? [],
+  };
 }
 
 async function create(body) {

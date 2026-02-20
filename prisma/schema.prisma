@@ -154,11 +154,32 @@ model SubCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parent   Category  @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  products Product[]
+  parent         Category        @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  subSubCategories SubSubCategory[]
+  products       Product[]
 
   @@unique([parentId, slug])
   @@map("sub_categories")
+}
+
+model SubSubCategory {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid())
+  slug        String
+  parentId    Int      // SubCategory
+  name        String
+  description String?  @db.Text
+  image       String?
+  status      String   @default("active")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   SubCategory @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([parentId, slug])
+  @@map("sub_sub_categories")
 }
 
 model Product {
@@ -168,6 +189,7 @@ model Product {
   name             String
   categoryId       Int
   subCategoryId    Int?
+  subSubCategoryId Int?
   price            Decimal  @db.Decimal(12, 2)
   discountPrice    Decimal? @db.Decimal(12, 2)
   stock            Int      @default(0)
@@ -196,8 +218,9 @@ model Product {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  subCategory    SubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  category        Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subCategory     SubCategory?    @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  subSubCategory  SubSubCategory? @relation(fields: [subSubCategoryId], references: [id], onDelete: SetNull)
   orderItems     OrderItem[]
   wishlistItems  WishlistItem[]
   cartItems      CartItem[]

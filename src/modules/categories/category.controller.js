@@ -1,5 +1,5 @@
 const categoryService = require('./category.service');
-const subcategoryService = require('./subcategory.service');
+const subsubcategoryService = require('./subsubcategory.service');
 
 // Public
 async function listPublic(req, res) {
@@ -39,6 +39,11 @@ async function listSubCategories(req, res) {
   res.json({ success: true, subCategories: data });
 }
 
+async function listSubSubCategories(req, res) {
+  const data = await subsubcategoryService.listAdmin({ parentId: req.params.id });
+  res.json({ success: true, subSubCategories: data });
+}
+
 module.exports = {
   listPublic,
   listAdmin,
@@ -47,4 +52,5 @@ module.exports = {
   update,
   remove,
   listSubCategories,
+  listSubSubCategories,
 };

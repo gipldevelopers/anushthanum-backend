@@ -12,6 +12,7 @@ function toProductResponse(p, includeRelations = false) {
   if (!p) return null;
   const cat = p.category;
   const sub = p.subCategory;
+  const subSub = p.subSubCategory;
   const base = {
     id: p.id,
     uuid: p.uuid,
@@ -19,8 +20,10 @@ function toProductResponse(p, includeRelations = false) {
     name: p.name,
     categoryId: p.categoryId,
     subCategoryId: p.subCategoryId,
+    subSubCategoryId: p.subSubCategoryId,
     categorySlug: cat?.slug,
     subCategorySlug: sub?.slug,
+    subSubCategorySlug: subSub?.slug,
     category: cat?.name,
     price: Number(p.price),
     originalPrice: p.discountPrice ? Number(p.price) : null,
@@ -64,6 +67,7 @@ async function listPublic(query) {
   const {
     categorySlug,
     subCategorySlug,
+    subSubCategorySlug,
     minPrice,
     maxPrice,
     purposes,
@@ -77,13 +81,16 @@ async function listPublic(query) {
   } = query;
 
   const where = { status: 'active', isVisible: true };
-  const include = { category: true, subCategory: true };
+  const include = { category: true, subCategory: true, subSubCategory: true };
 
   if (categorySlug) {
     where.category = { slug: categorySlug };
   }
   if (subCategorySlug) {
     where.subCategory = { slug: subCategorySlug };
+  }
+  if (subSubCategorySlug) {
+    where.subSubCategory = { slug: subSubCategorySlug };
   }
   if (minPrice != null || maxPrice != null) {
     where.price = {};
@@ -188,7 +195,7 @@ async function listAdmin(query) {
 
   const list = await prisma.product.findMany({
     where,
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, subSubCategory: true },
     orderBy: [{ sortOrder: 'asc' }, { id: 'desc' }],
   });
   return list.map((p) => toProductResponse(p));
@@ -197,7 +204,7 @@ async function listAdmin(query) {
 async function getById(id) {
   const p = await prisma.product.findUnique({
     where: { id: Number(id) },
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, subSubCategory: true },
   });
   return p ? toProductResponse(p) : null;
 }
@@ -205,7 +212,7 @@ async function getById(id) {
 async function getBySlug(slug) {
   const p = await prisma.product.findUnique({
     where: { slug, status: 'active', isVisible: true },
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, subSubCategory: true },
   });
   return p ? toProductResponse(p) : null;
 }
@@ -228,6 +235,7 @@ async function create(body) {
     name,
     categoryId,
     subCategoryId,
+    subSubCategoryId,
     price,
     discountPrice,
     stock,
@@ -265,10 +273,24 @@ async function create(body) {
     throw err;
   }
   const subId = subCategoryId ? Number(subCategoryId) : null;
+  const subSubId = subSubCategoryId ? Number(subSubCategoryId) : null;
   if (subId) {
     const sub = await prisma.subCategory.findUnique({ where: { id: subId } });
     if (!sub || sub.parentId !== cat.id) {
       const err = new Error('Subcategory not found or does not belong to category.');
+      err.statusCode = 400;
+      throw err;
+    }
+  }
+  if (subSubId) {
+    if (!subId) {
+      const err = new Error('Subcategory is required when sub-subcategory is set.');
+      err.statusCode = 400;
+      throw err;
+    }
+    const subSub = await prisma.subSubCategory.findUnique({ where: { id: subSubId } });
+    if (!subSub || subSub.parentId !== subId) {
+      const err = new Error('Sub-subcategory not found or does not belong to subcategory.');
       err.statusCode = 400;
       throw err;
     }
@@ -280,6 +302,7 @@ async function create(body) {
       name: name.trim(),
       categoryId: Number(categoryId),
       subCategoryId: subId,
+      subSubCategoryId: subSubId,
       price: Number(price) || 0,
       discountPrice: discountPrice != null ? Number(discountPrice) : null,
       stock: Number(stock) ?? 0,
@@ -301,7 +324,7 @@ async function create(body) {
       status: status === 'draft' ? 'draft' : 'active',
       sortOrder: Number(sortOrder) ?? 0,
     },
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, subSubCategory: true },
   });
   return toProductResponse(product);
 }
@@ -326,7 +349,7 @@ async function update(id, body) {
 
   const updateData = {};
   const fields = [
-    'name', 'categoryId', 'subCategoryId', 'price', 'discountPrice', 'stock', 'sku',
+    'name', 'categoryId', 'subCategoryId', 'subSubCategoryId', 'price', 'discountPrice', 'stock', 'sku',
     'shortDescription', 'fullDescription', 'thumbnail', 'images', 'tags',
     'benefits', 'whoShouldWear', 'wearingRules', 'authenticity', 'filterAttributes', 'variants',
     'isFeatured', 'isBestseller', 'isNew', 'status', 'sortOrder',
@@ -337,6 +360,7 @@ async function update(id, body) {
     if (f === 'name') updateData.name = body.name.trim();
     if (f === 'categoryId') updateData.categoryId = Number(body.categoryId);
     if (f === 'subCategoryId') updateData.subCategoryId = body.subCategoryId ? Number(body.subCategoryId) : null;
+    if (f === 'subSubCategoryId') updateData.subSubCategoryId = body.subSubCategoryId ? Number(body.subSubCategoryId) : null;
     if (f === 'price') updateData.price = Number(body.price) || 0;
     if (f === 'discountPrice') updateData.discountPrice = body.discountPrice != null ? Number(body.discountPrice) : null;
     if (f === 'stock') updateData.stock = Number(body.stock) ?? 0;
@@ -363,7 +387,7 @@ async function update(id, body) {
   const updated = await prisma.product.update({
     where: { id: Number(id) },
     data: updateData,
-    include: { category: true, subCategory: true },
+    include: { category: true, subCategory: true, subSubCategory: true },
   });
   return toProductResponse(updated);
 }
