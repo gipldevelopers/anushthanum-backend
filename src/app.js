@@ -11,6 +11,7 @@ const authRoutes = require('./modules/auth/auth.routes');
 const { publicRouter: categoriesPublicRouter, adminRouter: categoriesAdminRouter } = require('./modules/categories/category.routes');
 const { publicRouter: blogsPublicRouter, adminRouter: blogsAdminRouter } = require('./modules/blogs/blog.routes');
 const { publicRouter: productsPublicRouter, adminRouter: productsAdminRouter } = require('./modules/products/product.routes');
+const { publicRouter: contentPublicRouter, adminRouter: contentAdminRouter } = require('./modules/content/content.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 
 const app = express();
@@ -66,9 +67,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesPublicRouter);
 app.use('/api/blogs', blogsPublicRouter);
 app.use('/api/products', productsPublicRouter);
+app.use('/api/content', contentPublicRouter);
 app.use('/api/admin', categoriesAdminRouter);
 app.use('/api/admin/blogs', blogsAdminRouter);
 app.use('/api/admin/products', productsAdminRouter);
+app.use('/api/admin/content', contentAdminRouter);
 app.use('/api/admin/upload', uploadRoutes);
 
 app.use((req, res) => {
