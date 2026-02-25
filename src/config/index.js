@@ -20,4 +20,8 @@ module.exports = {
 
   // Google OAuth (client_id only; used to verify id_token)
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+
+  // Razorpay
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
 };

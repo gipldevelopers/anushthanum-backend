@@ -8,6 +8,8 @@ require('express-async-errors');
 
 const config = require('./config');
 const authRoutes = require('./modules/auth/auth.routes');
+const accountRoutes = require('./modules/account/account.routes');
+const checkoutRoutes = require('./modules/checkout/checkout.routes');
 const { publicRouter: categoriesPublicRouter, adminRouter: categoriesAdminRouter } = require('./modules/categories/category.routes');
 const { publicRouter: blogsPublicRouter, adminRouter: blogsAdminRouter } = require('./modules/blogs/blog.routes');
 const { publicRouter: productsPublicRouter, adminRouter: productsAdminRouter } = require('./modules/products/product.routes');
@@ -66,6 +68,8 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/checkout', checkoutRoutes);
 app.use('/api/categories', categoriesPublicRouter);
 app.use('/api/blogs', blogsPublicRouter);
 app.use('/api/products', productsPublicRouter);

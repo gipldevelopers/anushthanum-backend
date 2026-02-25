@@ -12,7 +12,8 @@
     "db:studio": "prisma studio",
     "db:seed": "node src/database/seed.js",
     "db:seed-filter-attributes": "node seed-filter-attributes.js",
-    "db:reset": "prisma db push --force-reset"
+    "db:reset": "prisma db push --force-reset",
+    "db:dev": "prisma db push && prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +39,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
     "pg": "^8.18.0",
+    "razorpay": "^2.9.6",
     "sharp": "^0.34.5",
     "uuid": "^13.0.0",
     "winston": "^3.19.0"

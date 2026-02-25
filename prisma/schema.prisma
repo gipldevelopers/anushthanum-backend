@@ -287,6 +287,8 @@ model Order {
   status              String    @default("pending")
   paymentMethod       String?
   paymentStatus       String    @default("pending")
+  razorpayOrderId     String?   @unique
+  razorpayPaymentId   String?
   trackingNumber      String?
   estimatedDeliveryAt DateTime?
   couponCode          String?
