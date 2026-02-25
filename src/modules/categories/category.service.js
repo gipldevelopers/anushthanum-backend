@@ -19,6 +19,7 @@ function toCategoryResponse(c) {
     image: c.image,
     type: c.type,
     status: c.status,
+    showInShopSection: c.showInShopSection ?? false,
     sortOrder: c.sortOrder,
     ...(c.subCategories && { subCategories: c.subCategories.map(toSubCategoryResponse) }),
   };
@@ -62,8 +63,10 @@ function toSubCategoryResponse(s, includeSubSub = false) {
 
 async function listPublic(query) {
   const type = query.type || null; // 'main' | 'material' | null = all
+  const showInShopSection = query.showInShopSection === true || query.showInShopSection === 'true' || query.showInShopSection === '1';
   const where = { status: 'active' };
   if (type) where.type = type;
+  if (showInShopSection) where.showInShopSection = true;
 
   const list = await prisma.category.findMany({
     where,
@@ -84,6 +87,7 @@ async function listPublic(query) {
     description: c.description,
     image: c.image,
     type: c.type,
+    showInShopSection: c.showInShopSection ?? false,
     sortOrder: c.sortOrder,
     ...(c.subCategories && { subCategories: c.subCategories.map((s) => toSubCategoryResponse(s, true)) }),
   }));
@@ -130,7 +134,7 @@ async function getById(id) {
 }
 
 async function create(body) {
-  const { name, description, image, type, status, sortOrder, seoTitle, seoDescription } = body;
+  const { name, description, image, type, status, sortOrder, showInShopSection, seoTitle, seoDescription } = body;
   const slug = body.slug?.trim() || slugify(name);
   const existing = await prisma.category.findUnique({ where: { slug } });
   if (existing) {
@@ -146,6 +150,7 @@ async function create(body) {
       image: image?.trim() || null,
       type: type === 'material' ? 'material' : 'main',
       status: status === 'inactive' ? 'inactive' : 'active',
+      showInShopSection: !!showInShopSection,
       sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
       seoTitle: seoTitle?.trim() || null,
       seoDescription: seoDescription?.trim() || null,
@@ -161,7 +166,7 @@ async function update(id, body) {
     err.statusCode = 404;
     throw err;
   }
-  const { name, description, image, type, status, sortOrder, seoTitle, seoDescription } = body;
+  const { name, description, image, type, status, sortOrder, showInShopSection, seoTitle, seoDescription } = body;
   const slug = body.slug?.trim();
   if (slug && slug !== category.slug) {
     const existing = await prisma.category.findUnique({ where: { slug } });
@@ -180,6 +185,7 @@ async function update(id, body) {
       ...(image !== undefined && { image: image?.trim() || null }),
       ...(type !== undefined && { type: type === 'material' ? 'material' : 'main' }),
       ...(status !== undefined && { status: status === 'inactive' ? 'inactive' : 'active' }),
+      ...(showInShopSection !== undefined && { showInShopSection: !!showInShopSection }),
       ...(typeof sortOrder === 'number' && { sortOrder }),
       ...(seoTitle !== undefined && { seoTitle: seoTitle?.trim() || null }),
       ...(seoDescription !== undefined && { seoDescription: seoDescription?.trim() || null }),

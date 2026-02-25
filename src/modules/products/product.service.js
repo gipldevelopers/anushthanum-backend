@@ -63,6 +63,13 @@ function toProductResponse(p, includeRelations = false) {
   return base;
 }
 
+const RESERVED_QUERY_KEYS = ['categorySlug', 'subCategorySlug', 'subSubCategorySlug', 'minPrice', 'maxPrice', 'sort', 'search', 'page', 'limit', 'isBestseller', 'isNew'];
+
+function parseFilterValue(val) {
+  if (!val) return [];
+  return Array.isArray(val) ? val.map((s) => String(s).trim()).filter(Boolean) : String(val).split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 async function listPublic(query) {
   const {
     categorySlug,
@@ -70,17 +77,21 @@ async function listPublic(query) {
     subSubCategorySlug,
     minPrice,
     maxPrice,
-    purposes,
-    beads,
-    mukhis,
-    platings,
     sort = 'popular',
     search,
     page = 1,
     limit = 24,
+    isBestseller,
+    isNew,
   } = query;
 
   const where = { status: 'active', isVisible: true };
+  if (isBestseller === true || isBestseller === 'true' || isBestseller === '1') {
+    where.isBestseller = true;
+  }
+  if (isNew === true || isNew === 'true' || isNew === '1') {
+    where.isNew = true;
+  }
   const include = { category: true, subCategory: true, subSubCategory: true };
 
   if (categorySlug) {
@@ -110,38 +121,16 @@ async function listPublic(query) {
     });
   }
 
-  const purposeArr = purposes ? (Array.isArray(purposes) ? purposes : String(purposes).split(',').map((s) => s.trim()).filter(Boolean)) : [];
-  const beadArr = beads ? (Array.isArray(beads) ? beads : String(beads).split(',').map((s) => s.trim()).filter(Boolean)) : [];
-  const mukhiArr = mukhis ? (Array.isArray(mukhis) ? mukhis : String(mukhis).split(',').map((s) => s.trim()).filter(Boolean)) : [];
-  const platingArr = platings ? (Array.isArray(platings) ? platings : String(platings).split(',').map((s) => s.trim()).filter(Boolean)) : [];
-
-  if (purposeArr.length > 0) {
-    andParts.push({
-      OR: purposeArr.map((p) => ({
-        filterAttributes: { path: ['purposes'], array_contains: p },
-      })),
-    });
-  }
-  if (beadArr.length > 0) {
-    andParts.push({
-      OR: beadArr.map((b) => ({
-        filterAttributes: { path: ['beads'], array_contains: b },
-      })),
-    });
-  }
-  if (mukhiArr.length > 0) {
-    andParts.push({
-      OR: mukhiArr.map((m) => ({
-        filterAttributes: { path: ['mukhis'], array_contains: m },
-      })),
-    });
-  }
-  if (platingArr.length > 0) {
-    andParts.push({
-      OR: platingArr.map((p) => ({
-        filterAttributes: { path: ['platings'], array_contains: p },
-      })),
-    });
+  for (const key of Object.keys(query)) {
+    if (RESERVED_QUERY_KEYS.includes(key)) continue;
+    const arr = parseFilterValue(query[key]);
+    if (arr.length > 0) {
+      andParts.push({
+        OR: arr.map((v) => ({
+          filterAttributes: { path: [key], array_contains: v },
+        })),
+      });
+    }
   }
 
   if (andParts.length > 0) {

@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "node src/database/seed.js",
+    "db:seed-filter-attributes": "node seed-filter-attributes.js",
     "db:reset": "prisma db push --force-reset"
   },
   "keywords": [],

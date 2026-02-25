@@ -121,17 +121,18 @@ model SavedPaymentMethod {
 // ============== Catalog ==============
 
 model Category {
-  id             Int      @id @default(autoincrement())
-  uuid           String   @unique @default(uuid())
-  slug           String   @unique
-  name           String
-  description    String?  @db.Text
-  image          String?
-  type           String   @default("main")  // "main" = navbar, "material" = material-wise (below hero)
-  status         String   @default("active")
-  seoTitle       String?
-  seoDescription String?  @db.VarChar(500)
-  sortOrder      Int      @default(0)
+  id                 Int      @id @default(autoincrement())
+  uuid               String   @unique @default(uuid())
+  slug               String   @unique
+  name               String
+  description        String?  @db.Text
+  image              String?
+  type               String   @default("main")  // "main" = navbar, "material" = material-wise (below hero)
+  status             String   @default("active")
+  showInShopSection  Boolean  @default(false)   // Show in "Shop by Category" section on homepage
+  seoTitle           String?
+  seoDescription     String?  @db.VarChar(500)
+  sortOrder          Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -361,6 +362,34 @@ model ProductReview {
 
   @@unique([userId, productId])
   @@map("product_reviews")
+}
+
+// ============== Filter Attributes ==============
+
+model FilterAttributeCategory {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique  // e.g. purposes, beads, mukhis, platings
+  name      String   // e.g. Purpose, Bead, Mukhi, Plating
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attributes FilterAttribute[]
+
+  @@map("filter_attribute_categories")
+}
+
+model FilterAttribute {
+  id         Int      @id @default(autoincrement())
+  categoryId Int
+  name       String   // e.g. Health, Rudraksha, 1 - Ek
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category FilterAttributeCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("filter_attributes")
 }
 
 // ============== Media ==============
