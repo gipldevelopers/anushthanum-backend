@@ -17,6 +17,8 @@ const { publicRouter: contentPublicRouter, adminRouter: contentAdminRouter } = r
 const { publicRouter: filterAttributesPublicRouter, adminRouter: filterAttributesAdminRouter } = require('./modules/filterAttributes/filterAttribute.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 const userRoutes = require('./modules/users/user.routes');
+const { adminRouter: ordersAdminRouter } = require('./modules/orders/order.routes');
+
 
 const app = express();
 
@@ -81,7 +83,9 @@ app.use('/api/admin/blogs', blogsAdminRouter);
 app.use('/api/admin/products', productsAdminRouter);
 app.use('/api/admin/filter-attributes', filterAttributesAdminRouter);
 app.use('/api/admin/content', contentAdminRouter);
+app.use('/api/admin/orders', ordersAdminRouter);
 app.use('/api/admin/upload', uploadRoutes);
+
 
 app.use((req, res) => {
   res.status(404).json({
