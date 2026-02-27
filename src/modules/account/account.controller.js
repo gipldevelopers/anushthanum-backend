@@ -53,6 +53,18 @@ async function getWishlist(req, res) {
   res.json({ success: true, wishlist });
 }
 
+async function addWishlistItem(req, res) {
+  const userId = req.userId;
+  const { productId } = req.body;
+  
+  if (!productId) {
+    return res.status(400).json({ success: false, message: 'Product ID is required' });
+  }
+
+  const item = await accountService.addWishlistItem(userId, productId);
+  res.status(201).json({ success: true, message: 'Added to wishlist', item });
+}
+
 async function updateProfile(req, res) {
   const userId = req.userId;
   const user = await accountService.updateProfile(userId, req.body);
@@ -92,6 +104,7 @@ module.exports = {
   updateAddress,
   deleteAddress,
   getWishlist,
+  addWishlistItem,
   removeWishlistItem,
   updateProfile,
   changePassword,

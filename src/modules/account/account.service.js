@@ -253,6 +253,17 @@ async function removeWishlistItem(userId, productId) {
   return true;
 }
 
+async function addWishlistItem(userId, productId) {
+  const existing = await prisma.wishlistItem.findFirst({
+    where: { userId, productId: Number(productId) },
+  });
+  if (existing) return existing;
+  const slug = `wi-${uuidv4().replace(/-/g, '').slice(0, 16)}`;
+  return await prisma.wishlistItem.create({
+    data: { slug, userId, productId: Number(productId) },
+  });
+}
+
 async function updateProfile(userId, body) {
   const { name, phone, dateOfBirth, spiritualLevel } = body;
   const updateData = {};
@@ -317,6 +328,7 @@ module.exports = {
   updateAddress,
   deleteAddress,
   getWishlist,
+  addWishlistItem,
   removeWishlistItem,
   updateProfile,
   changePassword,

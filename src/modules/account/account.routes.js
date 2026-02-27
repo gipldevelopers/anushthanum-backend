@@ -12,6 +12,7 @@ router.post('/addresses', accountController.createAddress);
 router.put('/addresses/:id', accountController.updateAddress);
 router.delete('/addresses/:id', accountController.deleteAddress);
 router.get('/wishlist', accountController.getWishlist);
+router.post('/wishlist', accountController.addWishlistItem);
 router.delete('/wishlist/:productId', accountController.removeWishlistItem);
 router.patch('/profile', accountController.updateProfile);
 router.post('/change-password', accountController.changePassword);
