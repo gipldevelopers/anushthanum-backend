@@ -67,11 +67,19 @@ async function createOrder(userId, body) {
   const orderNumber = generateOrderNumber();
   const slug = generateSlug();
 
+  let validUserId = null;
+  if (userId) {
+    const user = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    if (user) {
+      validUserId = user.id;
+    }
+  }
+
   // Create Order and OrderItems in DB
   const orderData = {
     slug,
     orderNumber,
-    customerId: userId || null,
+    customerId: validUserId,
     customerName: name.trim(),
     customerEmail: email.trim(),
     customerPhone: phone?.trim() || null,
