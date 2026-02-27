@@ -47,6 +47,22 @@ const googleAuthSchema = Joi.object({
   }),
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().trim().email().required(),
+});
+
+const resetPasswordSchema = Joi.object({
+  email: Joi.string().trim().email().required(),
+  otp: Joi.string().trim().length(6).pattern(/^\d+$/).required().messages({
+    'string.length': 'OTP must be 6 digits',
+    'string.pattern.base': 'OTP must contain only digits',
+  }),
+  password: Joi.string().min(6).required().messages({
+    'string.min': 'Password must be at least 6 characters',
+    'string.empty': 'Password is required',
+  }),
+});
+
 function validate(schema) {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
@@ -66,4 +82,6 @@ module.exports = {
   validateLogin: validate(loginSchema),
   validateAdminLogin: validate(adminLoginSchema),
   validateGoogleAuth: validate(googleAuthSchema),
+  validateForgotPassword: validate(forgotPasswordSchema),
+  validateResetPassword: validate(resetPasswordSchema),
 };

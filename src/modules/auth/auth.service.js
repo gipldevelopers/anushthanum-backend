@@ -4,7 +4,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { v4: uuidv4 } = require('uuid');
 const prisma = require('../../config/database');
 const config = require('../../config');
-const { sendOtpEmail } = require('../../utils/mailer');
+const { sendOtpEmail, sendResetPasswordEmail } = require('../../utils/mailer');
 
 const googleClient = config.GOOGLE_CLIENT_ID
   ? new OAuth2Client(config.GOOGLE_CLIENT_ID)
@@ -433,6 +433,94 @@ async function getAdminMe(adminId) {
   return toAdminResponse(admin);
 }
 
+async function forgotPassword(body) {
+  const { email } = body;
+  const emailLower = email.trim().toLowerCase();
+
+  const user = await prisma.user.findUnique({ where: { email: emailLower } });
+  if (!user) {
+    // Return success to prevent email enumeration, even if not found.
+    return { message: 'If an account exists, a reset link has been sent to your email.' };
+  }
+
+  // Generate a reset code instead of a magic link for simplicity with existing OTP system
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + config.OTP_EXPIRY_MINUTES * 60 * 1000);
+
+  await prisma.user.update({
+    where: { email: emailLower },
+    data: {
+      emailOtp: otp,
+      emailOtpExpires: expiresAt,
+      otpAttempts: 0,
+    },
+  });
+
+  try {
+    await sendResetPasswordEmail(emailLower, otp, user.name || 'User', config.OTP_EXPIRY_MINUTES);
+  } catch (e) {
+    console.error('[Auth] Reset password email failed:', e.message);
+    if (config.NODE_ENV === 'development') {
+      console.log('[Auth] Reset OTP for', emailLower, ':', otp);
+    }
+  }
+
+  return {
+    message: 'If an account exists, a reset code has been sent to your email.',
+    ...(config.NODE_ENV === 'development' && { devOtp: otp }),
+  };
+}
+
+async function resetPassword(body) {
+  const { email, otp, password } = body;
+  const emailLower = email.trim().toLowerCase();
+  const otpTrim = String(otp).trim();
+
+  const user = await prisma.user.findUnique({
+    where: { email: emailLower },
+  });
+
+  if (!user || !user.emailOtp || !user.emailOtpExpires) {
+    const err = new Error('Invalid or expired reset code.');
+    err.statusCode = 400;
+    throw err;
+  }
+  
+  if (new Date() > user.emailOtpExpires) {
+    await prisma.user.update({
+      where: { email: emailLower },
+      data: { emailOtp: null, emailOtpExpires: null },
+    });
+    const err = new Error('Reset code has expired.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  if (user.emailOtp !== otpTrim) {
+    await prisma.user.update({
+      where: { email: emailLower },
+      data: { otpAttempts: { increment: 1 } },
+    });
+    const err = new Error('Invalid reset code.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+  await prisma.user.update({
+    where: { email: emailLower },
+    data: {
+      password: hashedPassword,
+      emailOtp: null,
+      emailOtpExpires: null,
+      otpAttempts: 0,
+    },
+  });
+
+  return { message: 'Your password has been reset successfully. You can now sign in.' };
+}
+
 module.exports = {
   register,
   sendOtp,
@@ -442,5 +530,7 @@ module.exports = {
   googleAuth,
   adminLogin,
   getAdminMe,
+  forgotPassword,
+  resetPassword,
   signToken,
 };

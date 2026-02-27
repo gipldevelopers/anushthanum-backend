@@ -58,8 +58,43 @@ if (config.NODE_ENV === 'development') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+const fs = require('fs');
 const uploadsPath = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsPath));
+
+// Fallback logic for missing seeded dummy images
+app.use('/uploads/:folder/:filename', (req, res, next) => {
+  const { folder, filename } = req.params;
+  
+  // Extract base name without timestamp prefix and file extension
+  const match = filename.match(/^\d+-(.+)\.[^.]+$/);
+  if (!match) return next();
+  
+  const baseName = match[1].toLowerCase().replace(/[^a-z0-9]/g, '');
+  const targetDir = path.join(process.cwd(), '../frontend/public/images', folder);
+  
+  if (fs.existsSync(targetDir)) {
+    try {
+      const files = fs.readdirSync(targetDir);
+      // Attempt to find a matching file in frontend/public/images/:folder
+      const foundFile = files.find(f => {
+        const fileBase = f.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return fileBase === baseName || fileBase.includes(baseName) || baseName.includes(fileBase);
+      });
+      
+      if (foundFile) {
+        return res.sendFile(path.join(targetDir, foundFile));
+      }
+    } catch (e) {
+      // Ignore directory read errors
+    }
+  }
+  
+  // Final fallback to a generic placeholder to prevent broken images
+  res.sendFile(path.join(process.cwd(), '../frontend/public/placeholder.svg'), (err) => {
+    if (err) next();
+  });
+});
 
 app.get('/api/health', (req, res) => {
   res.json({

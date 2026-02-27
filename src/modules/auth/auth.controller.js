@@ -81,6 +81,24 @@ async function getAdminMe(req, res) {
   });
 }
 
+async function forgotPassword(req, res) {
+  const data = await authService.forgotPassword(req.body);
+  res.json({
+    success: true,
+    message: data.message,
+    ...(data.devOtp && { devOtp: data.devOtp }),
+  });
+}
+
+async function resetPassword(req, res) {
+  const data = await authService.resetPassword(req.body);
+  res.json({
+    success: true,
+    message: data.message,
+  });
+}
+
+
 module.exports = {
   register,
   sendOtp,
@@ -90,4 +108,6 @@ module.exports = {
   googleAuth,
   adminLogin,
   getAdminMe,
+  forgotPassword,
+  resetPassword,
 };
