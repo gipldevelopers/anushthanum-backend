@@ -18,6 +18,7 @@ const { publicRouter: filterAttributesPublicRouter, adminRouter: filterAttribute
 const uploadRoutes = require('./modules/upload/upload.routes');
 const userRoutes = require('./modules/users/user.routes');
 const { adminRouter: ordersAdminRouter } = require('./modules/orders/order.routes');
+const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 
 
 const app = express();
@@ -120,6 +121,7 @@ app.use('/api/admin/filter-attributes', filterAttributesAdminRouter);
 app.use('/api/admin/content', contentAdminRouter);
 app.use('/api/admin/orders', ordersAdminRouter);
 app.use('/api/admin/upload', uploadRoutes);
+app.use('/api/admin', dashboardRoutes);
 
 
 app.use((req, res) => {
